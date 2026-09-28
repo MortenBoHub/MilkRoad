@@ -1,16 +1,24 @@
-﻿using LinqToDB.Mapping;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using LinqToDB.Mapping;
 
 namespace DefaultNamespace.Entities;
 
-[Table("Products")]
+[LinqToDB.Mapping.Table("Products")]
 public class Products
 {
-    [PrimaryKey, Identity]
+    
+    [PrimaryKey, Identity] 
     public int Id { get; set; }
-
-    [Column("ProductName"), NotNull]
+    
+    [LinqToDB.Mapping.Column("UserId"), NotNull]
+    public int UserId { get; set; }
+    
+    [LinqToDB.Mapping.Column("ProductName"), NotNull]
     public string ProductName { get; set; } = "";
 
-    [Column("Price"), NotNull]
+    [LinqToDB.Mapping.Column("Price"), NotNull]
     public decimal Price { get; set; }
+    
+    [Association(ThisKey = nameof(UserId), OtherKey = nameof(User.UserId))]
+    public User? User { get; set; }
 }
