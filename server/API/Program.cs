@@ -1,20 +1,22 @@
+using API;
 using DefaultNamespace.Services;
+using Infrastructure;
 using LinqToDB;
 using Service;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = "Data Source=db.db";
 var options = new DataOptions().UseSQLite(connectionString);
-//set up database
+var DataOptions = new DataOptions<DatabaseConnection>(options); 
 //For products
 builder.Services.AddScoped<ProductService>();
 //For Users
 builder.Services.AddScoped<UserService>();
-//add scope database
-//add scope seeder
+builder.Services.AddScoped<DatabaseConnection>(_ => new DatabaseConnection(DataOptions));
+builder.Services.AddScoped<Seeder>();
 builder.Services.AddOpenApiDocument();
 builder.Services.AddProblemDetails();
-//set up exception handler
+builder.Services.AddExceptionHandler<ExceptionHandler>();
 builder.Services.AddControllers();
 builder.Services.AddCors();
 
@@ -25,7 +27,11 @@ app.UseCors(config => config.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin().
 app.UseOpenApi();
 app.UseSwaggerUi();
 
-//set up scope
+using (var scorp = app.Services.CreateScope())
+{
+    var seeder = scorp.ServiceProvider.GetService<Seeder>();
+    seeder.seed();
+}
 
 //app.MapGet("/", () => "Hello World!");
 app.MapControllers();
