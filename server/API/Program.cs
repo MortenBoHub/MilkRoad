@@ -1,10 +1,14 @@
 using LinqToDB;
+using Service;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = "Data Source=db.db";
 var options = new DataOptions().UseSQLite(connectionString);
 //set up database
-//add scope service
+//For products
+builder.Services.AddScoped<ProductService>();
+//For Users
+builder.Services.AddScoped<UserService>();
 //add scope database
 //add scope seeder
 builder.Services.AddOpenApiDocument();
