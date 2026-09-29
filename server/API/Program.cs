@@ -9,9 +9,9 @@ var connectionString = "Data Source=db.db";
 var options = new DataOptions().UseSQLite(connectionString);
 var DataOptions = new DataOptions<DatabaseConnection>(options); 
 //For products
-builder.Services.AddScoped<ProductService>();
+//builder.Services.AddScoped<ProductService>();
 //For Users
-builder.Services.AddScoped<UserService>();
+//builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<DatabaseConnection>(_ => new DatabaseConnection(DataOptions));
 builder.Services.AddScoped<Seeder>();
 builder.Services.AddOpenApiDocument();
