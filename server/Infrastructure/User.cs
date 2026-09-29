@@ -1,4 +1,5 @@
-﻿using LinqToDB.Mapping;
+﻿using System.Text.Json.Serialization;
+using LinqToDB.Mapping;
 
 namespace DefaultNamespace.Entities;
 
@@ -10,6 +11,9 @@ public class User
 
     [Column("UserName"), NotNull]
     public string UserName { get; set; } = "";
+    
+    [Column("Passwordhash"), NotNull,JsonIgnore]
+    public string PasswordHash { get; set; } = "";
 
     [Association(ThisKey = nameof(UserId), OtherKey = nameof(Products.UserId))]
     public List<Products> UserProducts { get; set; } = new();

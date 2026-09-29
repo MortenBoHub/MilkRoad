@@ -1,4 +1,5 @@
-﻿using DefaultNamespace.Entities;
+﻿using Microsoft.AspNetCore.Identity;
+using DefaultNamespace.Entities;
 using LinqToDB;
 using LinqToDB.Async;
 using LinqToDB.Data;
@@ -32,6 +33,28 @@ public class UserService
         user.UserId = await _db.InsertWithInt32IdentityAsync(user);
         return user;
     }
+
+    private readonly PasswordHasher<User> _hasher = new();
+
+    public async Task<User?> RegisterAsync(string userName, string password)
+    {
+        if (await _db.GetTable<User>().AnyAsync(u => u.UserName == userName))
+            return null;//name already taken
+        
+        var user = new User { UserName = userName };
+        user.PasswordHash = _hasher.HashPassword(user, password);
+        user.UserId = await _db.InsertWithInt32IdentityAsync(user);
+        return user;
+    }
+
+    public async Task<User?> LoginAsync(String userName, String password)
+    {
+        var user = await _db.GetTable<User>().FirstOrDefaultAsync(u => u.UserName == userName);
+        if (user is null) return null;
+
+        var result = _hasher.VerifyHashedPassword(user, user.PasswordHash, password);
+        return result == PasswordVerificationResult.Failed ? null : user;
+    }
     
     //Update
 
@@ -63,6 +86,8 @@ public class UserService
         await tx.CommitAsync();
         return rows > 0;
     }
+    
+    
     
 
 }

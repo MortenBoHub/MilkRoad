@@ -19,6 +19,9 @@ public class Products
     [LinqToDB.Mapping.Column("Price"), NotNull]
     public decimal Price { get; set; }
     
+    [LinqToDB.Mapping.Column("IsForSale"), NotNull]
+    public bool IsForSale { get; set; }
+    
     [Association(ThisKey = nameof(UserId), OtherKey = nameof(User.UserId))]
     public User? User { get; set; }
 }
