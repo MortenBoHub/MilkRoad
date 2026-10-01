@@ -39,6 +39,24 @@ public class ProductService
     //Delete
     public async Task<bool> DeleteAsync(int id) =>
     await _db.GetTable<Products>().DeleteAsync(p => p.Id == id) > 0;
+    
+    //Selling 
+    public async Task<bool> SetForSaleAsync(int productId, int userId, bool forSale)
+    {
+        var rows = await _db.GetTable<Products>()
+            .Where(p => p.Id == productId && p.UserId == userId)
+            .Set(p => p.IsForSale, forSale)
+            .UpdateAsync();
+
+        return rows > 0;
+    }
+    //Buying
+    public async Task<bool> BuyAsync(int productId, int buyerId) =>
+        await _db.GetTable<Products>()
+            .Where(p => p.Id == productId && p.IsForSale && p.UserId != buyerId)
+            .Set(p => p.UserId, buyerId)
+            .Set(p => p.IsForSale, false)
+            .UpdateAsync() > 0;
 }
 
     
