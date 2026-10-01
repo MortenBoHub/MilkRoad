@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/Server.Tests.csproj" />
+  </Folder>
   <Project Path="API/API.csproj" />
   <Project Path="Infrastructure/Infrastructure.csproj" />
   <Project Path="Service/Service.csproj" />
