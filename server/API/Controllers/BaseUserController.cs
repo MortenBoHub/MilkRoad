@@ -1,4 +1,5 @@
-﻿using DefaultNamespace.Entities;
+﻿using System.ComponentModel.DataAnnotations;
+using DefaultNamespace.Entities;
 using DefaultNamespace.Services;
 using Microsoft.AspNetCore.Mvc;
 using Service;
@@ -7,6 +8,8 @@ namespace API.Controllers;
 
 public record AuthRequest(string UserName, string Password);
 public record ProductRequest(string ProductName, decimal Price);
+
+public record BuyRequest([Required, MinLength(1)] List<int> ProductIds);
 /*
  * Username
  * Login
@@ -83,9 +86,12 @@ public class BaseUserController(UserService userService, ProductService productS
   
   //Buying 
   [HttpPost(nameof(Buy))]
-  public async Task<IActionResult> Buy(int buyerId, int productId)
+  public async Task<IActionResult> Buy(int buyerId, BuyRequest request)
   {
-      return await productService.BuyAsync(productId, buyerId) ? NoContent() : NotFound();
+      var total = await productService.BuyAsync(request.ProductIds, buyerId);
+      return total is null
+          ? NotFound("No products found")
+          : Ok(new { total });
   }
   
 }
