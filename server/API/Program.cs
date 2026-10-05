@@ -11,6 +11,7 @@ var options = new DataOptions().UseSQLite(connectionString);
 var DataOptions = new DataOptions<DatabaseConnection>(options); 
 //For products
 builder.Services.AddScoped<ProductService>();
+builder.Services.AddSingleton<IFbiBuyerChance, RandomFbiBuyerChance>();
 //For Users
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<DatabaseConnection>(_ => new DatabaseConnection(DataOptions));
