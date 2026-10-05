@@ -18,10 +18,8 @@ public class ProductService
     public Task<List<Products>> GetAllProductsAsync() =>
         _db.GetTable<Products>().ToListAsync();
 
-
     //Reads one
-
-    public Task<Products?> GetByIdAsync(int id) =>
+    public virtual Task<Products?> GetByIdAsync(int id) =>
         _db.GetTable<Products>().FirstOrDefaultAsync(p => p.Id == id);
 
     // Creates
@@ -41,7 +39,7 @@ public class ProductService
         await _db.GetTable<Products>().DeleteAsync(p => p.Id == id) > 0;
 
     //Selling 
-    public async Task<bool> SetForSaleAsync(int productId, int userId, bool forSale)
+    public virtual async Task<bool> SetForSaleAsync(int productId, int userId, bool forSale)
     {
         var rows = await _db.GetTable<Products>()
             .Where(p => p.Id == productId && p.UserId == userId)
@@ -90,3 +88,4 @@ public class ProductService
 
     
     
+}

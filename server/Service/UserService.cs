@@ -36,11 +36,11 @@ public class UserService
 
     private readonly PasswordHasher<User> _hasher = new();
 
-    public async Task<User?> RegisterAsync(string userName, string password)
+    public virtual async Task<User?> RegisterAsync(string userName, string password)
     {
         if (await _db.GetTable<User>().AnyAsync(u => u.UserName == userName))
-            return null;//name already taken
-        
+            return null; // name already taken
+
         var user = new User { UserName = userName };
         user.PasswordHash = _hasher.HashPassword(user, password);
         user.UserId = await _db.InsertWithInt32IdentityAsync(user);
