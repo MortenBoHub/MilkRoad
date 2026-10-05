@@ -8,11 +8,23 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+import {createBrowserRouter, Outlet, RouterProvider} from "react-router";
 
 const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
-    <App />
+    <RouterProvider router={createBrowserRouter([
+      {
+        path:'/',
+        element:<div><Outlet/></div>,
+        children:[
+          {
+            path:'/',
+            element:<App/>
+          }
+        ]
+      }
+    ])}/>
   </StrictMode>
 );
 
