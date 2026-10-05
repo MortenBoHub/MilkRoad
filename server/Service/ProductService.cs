@@ -25,7 +25,8 @@ public class ProductService
         _db.GetTable<Products>().FirstOrDefaultAsync(p => p.Id == id);
 
     // Creates
-    public virtual async Task<Products> CreateAsync(Products product)
+
+    public async Task<Products> CreateAsync(Products product)
     {
         product.Id = await _db.InsertWithInt32IdentityAsync(product);
         return product;
@@ -36,7 +37,7 @@ public class ProductService
         await _db.UpdateAsync(product) > 0;
 
     //Delete
-    public virtual async Task<bool> DeleteAsync(int id) =>
+    public async Task<bool> DeleteAsync(int id) =>
         await _db.GetTable<Products>().DeleteAsync(p => p.Id == id) > 0;
 
     //Selling 
@@ -77,6 +78,18 @@ public class ProductService
 
         var updated = await _db.GetTable<Products>()
             .Where(p => p.Id == productId && p.IsForSale && p.UserId != buyerId)
+    
+    private const int BulkDiscountThreshold = 10;
+    private const decimal BulkDiscountRate = 0.20m;
+    public async Task<decimal?> BuyAsync(List<int> productIds, int buyerId)
+    {
+        var ids = productIds.Distinct().ToList();
+        if (ids.Count == 0) return null;
+
+        await using var transaction = await _db.BeginTransactionAsync();
+
+        var bought = await _db.GetTable<Products>()
+            .Where(p => ids.Contains(p.Id) && p.IsForSale && p.UserId != buyerId)
             .Set(p => p.UserId, buyerId)
             .Set(p => p.IsForSale, false)
             .UpdateAsync();
@@ -87,4 +100,26 @@ public class ProductService
         await transaction.CommitAsync();
         return true;
     }
+        if (bought != ids.Count) return null;
+
+        var subtotal = await _db.GetTable<Products>()
+            .Where(p => ids.Contains(p.Id))
+            .SumAsync(p => p.Price);
+
+        await transaction.CommitAsync();
+
+        var total = ids.Count >= BulkDiscountThreshold
+            ? subtotal * (1 - BulkDiscountRate)
+            : subtotal;
+
+        return Math.Round(total, 2);
+        {
+        }
+    }
+}
+        
+    
+
+    
+    
 }
