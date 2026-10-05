@@ -21,6 +21,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ExceptionHandler>();
 builder.Services.AddControllers();
 builder.Services.AddCors();
+builder.Services.AddScoped<CategoryService>();
 
 var app = builder.Build();
 
