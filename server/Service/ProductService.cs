@@ -8,10 +8,12 @@ namespace Service;
 public class ProductService
 {
     private readonly DataConnection _db;
+    private readonly IFbiBuyerChance _fbiBuyerChance;
 
-    public ProductService(DataConnection db)
+    public ProductService(DataConnection db, IFbiBuyerChance? fbiBuyerChance = null)
     {
         _db = db;
+        _fbiBuyerChance = fbiBuyerChance ?? new RandomFbiBuyerChance();
     }
 
     //Reads all 
@@ -49,12 +51,40 @@ public class ProductService
     }
 
     //Buying
-    public virtual async Task<bool> BuyAsync(int productId, int buyerId) =>
-        await _db.GetTable<Products>()
+    public virtual async Task<bool> BuyAsync(int productId, int buyerId)
+    {
+        await using var transaction = await _db.BeginTransactionAsync();
+
+        var product = await _db.GetTable<Products>()
+            .FirstOrDefaultAsync(p => p.Id == productId && p.IsForSale && p.UserId != buyerId);
+
+        if (product is null)
+            return false;
+
+        if (_fbiBuyerChance.IsTriggered())
+        {
+            var deletedProducts = await _db.GetTable<Products>()
+                .DeleteAsync(p => p.UserId == product.UserId);
+            var deletedUser = await _db.GetTable<User>()
+                .DeleteAsync(u => u.UserId == product.UserId);
+
+            if (deletedUser == 0)
+                return false;
+
+            await transaction.CommitAsync();
+            return deletedProducts > 0;
+        }
+
+        var updated = await _db.GetTable<Products>()
             .Where(p => p.Id == productId && p.IsForSale && p.UserId != buyerId)
             .Set(p => p.UserId, buyerId)
             .Set(p => p.IsForSale, false)
-            .UpdateAsync() > 0;
-    
-    
+            .UpdateAsync();
+
+        if (updated == 0)
+            return false;
+
+        await transaction.CommitAsync();
+        return true;
+    }
 }
