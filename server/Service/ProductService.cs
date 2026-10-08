@@ -21,7 +21,7 @@ public class ProductService
     }
 
     // Reads all products
-    public Task<List<Products>> GetAllProductsAsync() =>
+    public virtual Task<List<Products>> GetAllProductsAsync() =>
         _db.GetTable<Products>().ToListAsync();
 
     // Reads one product
@@ -30,18 +30,18 @@ public class ProductService
             .FirstOrDefaultAsync(p => p.Id == id);
 
     // Creates a product
-    public async Task<Products> CreateAsync(Products product)
+    public virtual async Task<Products> CreateAsync(Products product)
     {
         product.Id = await _db.InsertWithInt32IdentityAsync(product);
         return product;
     }
 
     // Updates a product
-    public async Task<bool> UpdateAsync(Products product) =>
+    public virtual async Task<bool> UpdateAsync(Products product) =>
         await _db.UpdateAsync(product) > 0;
 
     // Deletes a product
-    public async Task<bool> DeleteAsync(int id) =>
+     public virtual async Task<bool> DeleteAsync(int id) =>
         await _db.GetTable<Products>()
             .DeleteAsync(p => p.Id == id) > 0;
 
@@ -111,7 +111,7 @@ public class ProductService
     }
 
     // Buying multiple products
-    public async Task<decimal?> BuyAsync(
+    public virtual async Task<decimal?> BuyAsync(
         List<int> productIds,
         int buyerId)
     {
@@ -151,5 +151,19 @@ public class ProductService
             : subtotal;
 
         return Math.Round(total, 2);
+    }
+    
+    
+    public virtual async Task<bool> SetDescriptionAsync(
+        int productId,
+        int userId,
+        string description)
+    {
+        var rows = await _db.GetTable<Products>()
+            .Where(p => p.Id == productId && p.UserId == userId)
+            .Set(p => p.Description, description)
+            .UpdateAsync();
+
+        return rows > 0;
     }
 }

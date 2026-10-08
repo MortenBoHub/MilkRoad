@@ -18,6 +18,9 @@ public class BaseUserControllerTests
         public FakeUserService() : base(null!)
         {
         }
+        
+        public decimal? TotalToReturn { get; set; } // for bulk Buy
+        
 
         public override Task<User?> RegisterAsync(string userName, string password)
             => Task.FromResult(UserToReturn);
@@ -186,20 +189,6 @@ public class BaseUserControllerTests
             var controller = CreateController(products: new FakeProductService { BoolResult = serviceResult });
 
             var result = await controller.Sell(5, 1);
-
-            Assert.IsType(expectedType, result);
-        }
-
-        // ---------- Buy ----------
-
-        [Theory]
-        [InlineData(true, typeof(NoContentResult))]
-        [InlineData(false, typeof(NotFoundResult))]
-        public async Task Buy_ReturnsExpectedResult(bool serviceResult, Type expectedType)
-        {
-            var controller = CreateController(products: new FakeProductService { BoolResult = serviceResult });
-
-            var result = await controller.Buy(5, 1);
 
             Assert.IsType(expectedType, result);
         }

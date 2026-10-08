@@ -15,7 +15,11 @@ public class Products
     
     [LinqToDB.Mapping.Column("ProductName"), NotNull]
     public string ProductName { get; set; } = "";
+    
+    [LinqToDB.Mapping.Column("Decscription")]
 
+    public string Description { get; set; } = "";
+    
     [LinqToDB.Mapping.Column("Price"), NotNull]
     public decimal Price { get; set; }
     
