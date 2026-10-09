@@ -172,4 +172,18 @@ public class ProductService
             shutDownVendors.Count > 0,
             shutDownVendors);
     }
+    
+    
+    public virtual async Task<bool> SetDescriptionAsync(
+        int productId,
+        int userId,
+        string description)
+    {
+        var rows = await _db.GetTable<Products>()
+            .Where(p => p.Id == productId && p.UserId == userId)
+            .Set(p => p.Description, description)
+            .UpdateAsync();
+
+        return rows > 0;
+    }
 }

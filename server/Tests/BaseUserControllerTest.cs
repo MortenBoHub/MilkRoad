@@ -16,6 +16,9 @@ public class buBaseUserControllerTests
         public FakeUserService() : base(null!)
         {
         }
+        
+        public decimal? TotalToReturn { get; set; } // for bulk Buy
+        
 
         public override Task<User?> RegisterAsync(string userName, string password)
             => Task.FromResult(UserToReturn);
