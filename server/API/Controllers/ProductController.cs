@@ -35,7 +35,7 @@ public class ProductController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Products>> Create(CreateProductRequest request)
     {
-        if (await _userService.GetByIdWithProductsAsync(request.UserId) is null)
+        if (!await _userService.UserExistsAsync(request.UserId))
         {
             return NotFound($"User {request.UserId} was not found.");
         }
@@ -44,7 +44,10 @@ public class ProductController : ControllerBase
         {
             UserId = request.UserId,
             ProductName = request.ProductName.Trim(),
-            Price = request.Price
+            Price = request.Price,
+            Category = string.IsNullOrWhiteSpace(request.Category)
+                ? Products.DefaultCategory
+                : request.Category.Trim()
         };
 
         await _productService.CreateAsync(product);
@@ -96,9 +99,15 @@ public class ProductController : ControllerBase
 public record CreateProductRequest(
     [Required, Range(1, int.MaxValue)] int UserId,
     [Required, StringLength(200, MinimumLength = 1)] string ProductName,
-    [Range(typeof(decimal), "0.01", "79228162514264337593543950335")] decimal Price);
+    [Range(typeof(decimal), "0.01", "79228162514264337593543950335",
+        ParseLimitsInInvariantCulture = true,
+        ConvertValueInInvariantCulture = true)] decimal Price,
+    // Category slug; blank falls back to the default.
+    [StringLength(50, MinimumLength = 1)] string? Category = null);
 
 public record UpdateProductRequest(
     [Required, Range(1, int.MaxValue)] int UserId,
     [Required, StringLength(200, MinimumLength = 1)] string ProductName,
-    [Range(typeof(decimal), "0.01", "79228162514264337593543950335")] decimal Price);
+    [Range(typeof(decimal), "0.01", "79228162514264337593543950335",
+        ParseLimitsInInvariantCulture = true,
+        ConvertValueInInvariantCulture = true)] decimal Price);

@@ -6,13 +6,12 @@ using LinqToDB.Data;
 using Service;
 
 var builder = WebApplication.CreateBuilder(args);
-var connectionString = "Data Source=db.db";
-var options = new DataOptions().UseSQLite(connectionString);
-var DataOptions = new DataOptions<DatabaseConnection>(options); 
-//For products
+var connectionString = builder.Configuration.GetConnectionString("Default")
+    ?? "Host=localhost;Port=5432;Database=milkroad;Username=milkroad;Password=milkroad";
+var options = new DataOptions().UsePostgreSQL(connectionString);
+var DataOptions = new DataOptions<DatabaseConnection>(options);
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddSingleton<IFbiBuyerChance, RandomFbiBuyerChance>();
-//For Users
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<DatabaseConnection>(_ => new DatabaseConnection(DataOptions));
 builder.Services.AddScoped<Seeder>();
@@ -37,7 +36,6 @@ using (var scorp = app.Services.CreateScope())
     seeder.seed();
 }
 
-//app.MapGet("/", () => "Hello World!");
 app.MapControllers();
 
 app.Run();

@@ -15,19 +15,20 @@ public class UserService
         _db = db;
     }
 
-    // Get all users with their products
     public Task<List<User>> GetAllWithProductsAsync() =>
         _db.GetTable<User>()
             .LoadWith(u => u.UserProducts)
             .ToListAsync();
 
-    // Get one user with their products
     public Task<User?> GetByIdWithProductsAsync(int id) =>
         _db.GetTable<User>()
             .LoadWith(u => u.UserProducts)
             .FirstOrDefaultAsync(u => u.UserId == id);
-    
-    //Create user 
+
+    // Existence check for the write path — no need to load the product graph.
+    public Task<bool> UserExistsAsync(int id) =>
+        _db.GetTable<User>().AnyAsync(u => u.UserId == id);
+
     public async Task<User> CreateuserAsync(User user)
     {
         user.UserId = await _db.InsertWithInt32IdentityAsync(user);
@@ -39,7 +40,7 @@ public class UserService
     public virtual async Task<User?> RegisterAsync(string userName, string password)
     {
         if (await _db.GetTable<User>().AnyAsync(u => u.UserName == userName))
-            return null; // name already taken
+            return null;
 
         var user = new User { UserName = userName };
         user.PasswordHash = _hasher.HashPassword(user, password);
@@ -55,8 +56,6 @@ public class UserService
         var result = _hasher.VerifyHashedPassword(user, user.PasswordHash, password);
         return result == PasswordVerificationResult.Failed ? null : user;
     }
-    
-    //Update
 
     public async Task<bool> UpdateUserAsync(User user)
     {
@@ -64,18 +63,16 @@ public class UserService
             .FirstOrDefaultAsync(u => u.UserId == user.UserId);
 
         if (existing is null)
-            return false; 
+            return false;
 
         if (existing.UserName == user.UserName)
-            return false; 
+            return false;
 
         existing.UserName = user.UserName;
         await _db.UpdateAsync(existing);
         return true;
     }
-    
-    //Deletes Users and their products
-    
+
     public async Task<bool> DeleteUserAsync(int id)
     {
         await using var tx = await _db.BeginTransactionAsync();
@@ -86,9 +83,4 @@ public class UserService
         await tx.CommitAsync();
         return rows > 0;
     }
-    
-
-    
-    
-
 }

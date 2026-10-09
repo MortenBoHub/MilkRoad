@@ -17,6 +17,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Pin the output name; the entrypoint in the Docker image depends on it. -->
+    <AssemblyName>API</AssemblyName>
   </PropertyGroup>
 
 </Project>

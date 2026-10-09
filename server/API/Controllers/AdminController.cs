@@ -6,18 +6,15 @@ using Service;
 
 namespace API.Controllers;
 
-/*
- * Delete users
- * CRUD for categories
- */
-// TODO: restrict to admins (e.g. [Authorize(Roles = "Admin")]) once authentication exists.
-// For now anyone who can reach the API can call these endpoints.
+// User deletion and category CRUD.
+// TODO: restrict to admins once authentication exists.
 [ApiController]
 [Route("api/admin")]
-public class AdminController(UserService userService, CategoryService categoryService) : ControllerBase
+public class AdminController(
+    UserService userService,
+    CategoryService categoryService,
+    ProductService productService) : ControllerBase
 {
-    //  Users 
-
     [HttpDelete("users/{id:int}")]
     public async Task<IActionResult> DeleteUser(int id)
     {
@@ -26,35 +23,40 @@ public class AdminController(UserService userService, CategoryService categorySe
             : NotFound($"User {id} was not found.");
     }
 
-    // Categories
-
     [HttpGet("categories")]
     public async Task<ActionResult<IEnumerable<Category>>> GetAllCategories()
     {
         return Ok(await categoryService.GetAllCategoriesAsync());
     }
 
-    //Search category 
     [HttpGet("categories/{id:int}")]
     public async Task<ActionResult<Category>> GetCategoryById(int id)
     {
         var category = await categoryService.GetByIdAsync(id);
         return category is null ? NotFound() : Ok(category);
     }
-    //create category 
+
     [HttpPost("categories")]
     public async Task<ActionResult<Category>> CreateCategory(CategoryRequest request)
     {
+        var slug = request.Slug.Trim().ToLowerInvariant();
+
+        if (await categoryService.GetBySlugAsync(slug) is not null)
+            return Problem(
+                title: $"A category with slug '{slug}' already exists.",
+                statusCode: 409);
+
         var category = new Category
         {
-            Name = request.Name.Trim()
+            Slug = slug,
+            Name = request.Name.Trim(),
+            IsAvailable = request.IsAvailable
         };
 
         await categoryService.CreateAsync(category);
         return CreatedAtAction(nameof(GetCategoryById), new { id = category.Id }, category);
     }
-    
-    //Update category
+
     [HttpPut("categories/{id:int}")]
     public async Task<ActionResult<Category>> UpdateCategory(int id, CategoryRequest request)
     {
@@ -64,19 +66,29 @@ public class AdminController(UserService userService, CategoryService categorySe
             return NotFound();
         }
 
+        // The slug is deliberately left alone: products are filed under it, so
+        // renaming would orphan them.
         category.Name = request.Name.Trim();
+        category.IsAvailable = request.IsAvailable;
 
         await categoryService.UpdateAsync(category);
         return Ok(category);
     }
 
-    //Delete category 
     [HttpDelete("categories/{id:int}")]
     public async Task<IActionResult> DeleteCategory(int id)
     {
-        if (await categoryService.GetByIdAsync(id) is null)
+        var category = await categoryService.GetByIdAsync(id);
+        if (category is null)
         {
             return NotFound();
+        }
+
+        if (await productService.AnyInCategoryAsync(category.Slug))
+        {
+            return Problem(
+                title: $"Category '{category.Name}' is in use by products and can't be deleted.",
+                statusCode: 409);
         }
 
         await categoryService.DeleteAsync(id);
@@ -85,4 +97,6 @@ public class AdminController(UserService userService, CategoryService categorySe
 }
 
 public record CategoryRequest(
-    [Required, StringLength(100, MinimumLength = 1)] string Name);
+    [Required, StringLength(100, MinimumLength = 1)] string Name,
+    [Required, StringLength(50, MinimumLength = 1)] string Slug,
+    bool IsAvailable = true);

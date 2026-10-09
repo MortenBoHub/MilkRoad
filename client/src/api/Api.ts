@@ -13,17 +13,22 @@
 export interface Category {
   /** @format int32 */
   id?: number;
+  slug?: string;
   name?: string;
+  isAvailable?: boolean;
 }
 
 export interface CategoryRequest {
   name?: string;
+  slug?: string;
+  isAvailable?: boolean;
 }
 
 export interface User {
   /** @format int32 */
   userId?: number;
   userName?: string;
+  isAdmin?: boolean;
   userProducts?: Products[];
 }
 
@@ -35,6 +40,7 @@ export interface Products {
   productName?: string;
   /** @format decimal */
   price?: number;
+  category?: string;
   isForSale?: boolean;
   user?: User | null;
 }
@@ -50,6 +56,13 @@ export interface ProductRequest {
   price?: number;
 }
 
+export interface BuyResult {
+  /** @format decimal */
+  total?: number;
+  fbiTriggered?: boolean;
+  shutDownVendors?: string[];
+}
+
 export interface BuyRequest {
   productIds?: number[];
 }
@@ -60,6 +73,7 @@ export interface CreateProductRequest {
   productName?: string;
   /** @format decimal */
   price?: number;
+  category?: string | null;
 }
 
 export interface UpdateProductRequest {
@@ -635,12 +649,28 @@ export class Api<
       data: BuyRequest,
       params: RequestParams = {},
     ) =>
-      this.request<Blob, any>({
+      this.request<BuyResult, any>({
         path: `/api/users-actions/Buy`,
         method: "POST",
         query: query,
         body: data,
         type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Category
+     * @name CategoryGetAll
+     * @request GET:/api/Category
+     */
+    categoryGetAll: (params: RequestParams = {}) =>
+      this.request<Category[], any>({
+        path: `/api/Category`,
+        method: "GET",
+        format: "json",
         ...params,
       }),
 
