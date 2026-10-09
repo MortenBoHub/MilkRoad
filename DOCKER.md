@@ -53,6 +53,46 @@ Postgres credentials live in `.env` (dev defaults; not committed). The API reads
 its connection string from `ConnectionStrings__Default`, which Compose builds
 from those values — no code change needed.
 
+## Forcing the FBI raid (for demos)
+
+There is a 1% chance per vendor that a purchase triggers an FBI raid and closes the
+vendor. That is great for authenticity but hard to show live, so for demos you can
+force it:
+
+1. In `docker-compose.yml`, add `MR_FORCE_FBI: "1"` to the `api` service's
+   `environment` block.
+2. Apply the change — no rebuild needed, Compose just recreates the container:
+
+   ```sh
+   docker compose up -d api
+   ```
+
+3. Remove the line and run `docker compose up -d api` again to return to the
+   normal 1% chance.
+
+> **This must be set on the `api` container through Compose.**
+> `launchSettings.json` only affects running the API locally with `dotnet run` (or
+> the IDE); it has no effect inside Docker.
+
+Note: while forced, **every** purchase triggers a raid, so a normal successful
+purchase cannot be demonstrated at the same time.
+
+Optional: make it toggleable without editing the file. Add
+`MR_FORCE_FBI: ${MR_FORCE_FBI:-}` to the `api` service once, then set the variable
+in your shell before recreating the container:
+
+```sh
+# bash / zsh / macOS / Linux
+MR_FORCE_FBI=1 docker compose up -d api     # force on
+docker compose up -d api                    # force off
+```
+
+```powershell
+# Windows PowerShell
+$env:MR_FORCE_FBI = "1"; docker compose up -d api   # force on
+$env:MR_FORCE_FBI = "";  docker compose up -d api   # force off
+```
+
 ## Regenerating the API client
 
 `client/src/api/Api.ts` is generated from the running API with
