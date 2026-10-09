@@ -79,7 +79,7 @@ export function useAdminCategories() {
       return false;
     }
     if (!slug) {
-      setActionError("A slug is required (letters, numbers and dashes).");
+      setActionError("A category ID is required (letters, numbers and dashes).");
       return false;
     }
 

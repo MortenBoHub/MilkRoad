@@ -1,0 +1,50 @@
+# MilkRoad — three containers: Postgres, the .NET API, and the Bun/React web app.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-milkroad}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-milkroad}
+      POSTGRES_DB: ${POSTGRES_DB:-milkroad}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-milkroad} -d ${POSTGRES_DB:-milkroad}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:5001
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Host=db;Port=5432;Database=${POSTGRES_DB:-milkroad};Username=${POSTGRES_USER:-milkroad};Password=${POSTGRES_PASSWORD:-milkroad}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "5001:5001"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        BUN_PUBLIC_API_URL: http://localhost:5001
+    environment:
+      BUN_PUBLIC_API_URL: http://localhost:5001
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

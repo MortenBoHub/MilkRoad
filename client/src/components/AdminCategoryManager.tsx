@@ -50,7 +50,7 @@ export function AdminCategoryManager({
       >
         <div className="admin__add-fields">
           <label className="admin__field">
-            <span className="admin__label">Name</span>
+            <span className="admin__label">Category name</span>
             <input
               className="form__input"
               value={draft.name}
@@ -61,7 +61,7 @@ export function AdminCategoryManager({
           </label>
 
           <label className="admin__field">
-            <span className="admin__label">Slug</span>
+            <span className="admin__label">Category ID</span>
             <input
               className="form__input"
               value={draft.slug}
@@ -106,8 +106,8 @@ export function AdminCategoryManager({
         <table className="admin__table">
           <thead>
             <tr>
-              <th>Label</th>
-              <th>Slug</th>
+              <th>Category name</th>
+              <th>Category ID</th>
               <th>Availability</th>
               <th aria-label="Actions" />
             </tr>

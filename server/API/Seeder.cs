@@ -31,28 +31,9 @@ public class Seeder(DatabaseConnection db)
         db.CreateTable<User>(tableOptions: TableOptions.CreateIfNotExists);
         db.CreateTable<Category>(tableOptions: TableOptions.CreateIfNotExists);
 
-        // CreateIfNotExists never alters an existing table, so add newer columns
-        // in place; the pragma check keeps each fix idempotent.
-        if (!HasColumn("Products", "Category"))
-            db.Execute(
-                $"ALTER TABLE Products ADD COLUMN Category TEXT NOT NULL DEFAULT '{Products.DefaultCategory}'");
-
-        if (!HasColumn("Users", "IsAdmin"))
-            db.Execute("ALTER TABLE Users ADD COLUMN IsAdmin INTEGER NOT NULL DEFAULT 0");
-
-        if (!HasColumn("categories", "slug"))
-            db.Execute("ALTER TABLE categories ADD COLUMN slug TEXT NOT NULL DEFAULT ''");
-
-        if (!HasColumn("categories", "IsAvailable"))
-            db.Execute("ALTER TABLE categories ADD COLUMN IsAvailable INTEGER NOT NULL DEFAULT 1");
-
         SeedCategoriesIfEmpty();
         SeedAdminsIfMissing();
     }
-
-    private bool HasColumn(string table, string column) =>
-        db.Query<string>($"SELECT name FROM pragma_table_info('{table}')")
-            .Any(name => string.Equals(name, column, StringComparison.OrdinalIgnoreCase));
 
     private void SeedCategoriesIfEmpty()
     {

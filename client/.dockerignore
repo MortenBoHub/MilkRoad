@@ -1,29 +1,3 @@
-﻿# Git
-.git
-.gitignore
-.gitattributes
-
-# Documentation
-*.md
-README*
-
-# Dependencies
-node_modules
-
-# Build output
+﻿node_modules
 dist
-
-# IDE
-.idea
-
-# Docker
-Dockerfile*
-.dockerignore
-
-# Logs
-*.log
-npm-debug.log*
-
-# Env files that must never ship (the committed .env is a public default)
-.env.local
-.env.*.local
+.git

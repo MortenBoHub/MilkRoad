@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+# Local SQLite scratch file (superseded by the Postgres container)
+*.db
+
 # User-specific files
 *.rsuser
 *.suo
