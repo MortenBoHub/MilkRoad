@@ -7,27 +7,14 @@
 *.md
 README*
 
-# Client - Dependencies
-client/node_modules/
-client/package-lock.json
+# Dependencies
+node_modules
 
-# Client - Build outputs
-client/dist/
-client/build/
+# Build output
+dist
 
-# Client - Bun specific
-client/bun.lock
-client/.bun/
-
-# Server - Build outputs
-server/**/bin/
-server/**/obj/
-
-# Server - User-specific files
-server/**/*.user
-server/**/*.suo
-server/**/*.userosscache
-server/**/.vs/
+# IDE
+.idea
 
 # Docker
 Dockerfile*
@@ -36,3 +23,7 @@ Dockerfile*
 # Logs
 *.log
 npm-debug.log*
+
+# Env files that must never ship (the committed .env is a public default)
+.env.local
+.env.*.local

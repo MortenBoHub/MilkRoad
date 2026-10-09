@@ -1,5 +1,4 @@
-﻿
-using DefaultNamespace.Entities;
+﻿using DefaultNamespace.Entities;
 using LinqToDB;
 using LinqToDB.Async;
 using LinqToDB.Data;
@@ -20,32 +19,30 @@ public class ProductService
         _fbiBuyerChance = fbiBuyerChance ?? new RandomFbiBuyerChance();
     }
 
-    // Reads all products
     public Task<List<Products>> GetAllProductsAsync() =>
         _db.GetTable<Products>().ToListAsync();
 
-    // Reads one product
+    // Any product filed under this slug? Blocks deleting an in-use category.
+    public Task<bool> AnyInCategoryAsync(string slug) =>
+        _db.GetTable<Products>().AnyAsync(p => p.Category == slug);
+
     public virtual Task<Products?> GetByIdAsync(int id) =>
         _db.GetTable<Products>()
             .FirstOrDefaultAsync(p => p.Id == id);
 
-    // Creates a product
-    public async Task<Products> CreateAsync(Products product)
+    public virtual async Task<Products> CreateAsync(Products product)
     {
         product.Id = await _db.InsertWithInt32IdentityAsync(product);
         return product;
     }
 
-    // Updates a product
     public async Task<bool> UpdateAsync(Products product) =>
         await _db.UpdateAsync(product) > 0;
 
-    // Deletes a product
-    public async Task<bool> DeleteAsync(int id) =>
+    public virtual async Task<bool> DeleteAsync(int id) =>
         await _db.GetTable<Products>()
             .DeleteAsync(p => p.Id == id) > 0;
 
-    // Selling
     public virtual async Task<bool> SetForSaleAsync(
         int productId,
         int userId,
@@ -59,7 +56,6 @@ public class ProductService
         return rows > 0;
     }
 
-    // Buying one product
     public virtual async Task<bool> BuyAsync(
         int productId,
         int buyerId)
@@ -75,7 +71,6 @@ public class ProductService
         if (product is null)
             return false;
 
-        // FBI chance
         if (_fbiBuyerChance.IsTriggered())
         {
             var deletedProducts = await _db.GetTable<Products>()
@@ -92,7 +87,6 @@ public class ProductService
             return deletedProducts > 0;
         }
 
-        // Normal purchase
         var updated = await _db.GetTable<Products>()
             .Where(p =>
                 p.Id == productId &&
@@ -110,8 +104,7 @@ public class ProductService
         return true;
     }
 
-    // Buying multiple products
-    public async Task<decimal?> BuyAsync(
+    public virtual async Task<BuyResult?> BuyAsync(
         List<int> productIds,
         int buyerId)
     {
@@ -124,32 +117,59 @@ public class ProductService
 
         await using var transaction = await _db.BeginTransactionAsync();
 
-        // Buy all products
-        var bought = await _db.GetTable<Products>()
+        var products = await _db.GetTable<Products>()
             .Where(p =>
                 ids.Contains(p.Id) &&
                 p.IsForSale &&
                 p.UserId != buyerId)
-            .Set(p => p.UserId, buyerId)
-            .Set(p => p.IsForSale, false)
-            .UpdateAsync();
+            .ToListAsync();
 
-        // Not all requested products could be bought
-        if (bought != ids.Count)
+        if (products.Count != ids.Count)
             return null;
 
-        // Calculate subtotal
-        var subtotal = await _db.GetTable<Products>()
-            .Where(p => ids.Contains(p.Id))
-            .SumAsync(p => p.Price);
+        // Charged for the whole attempt, so the subtotal is taken before any deletion.
+        var subtotal = products.Sum(p => p.Price);
+
+        var shutDownVendors = new List<string>();
+
+        // One roll per vendor; ordered by vendor id so the rolls stay deterministic.
+        foreach (var vendor in products.GroupBy(p => p.UserId).OrderBy(g => g.Key))
+        {
+            if (_fbiBuyerChance.IsTriggered())
+            {
+                // Raid: the vendor is closed for good and their products seized,
+                // but the buyer still pays and receives nothing.
+                var owner = await _db.GetTable<User>()
+                    .FirstOrDefaultAsync(u => u.UserId == vendor.Key);
+
+                await _db.GetTable<Products>()
+                    .DeleteAsync(p => p.UserId == vendor.Key);
+
+                await _db.GetTable<User>()
+                    .DeleteAsync(u => u.UserId == vendor.Key);
+
+                shutDownVendors.Add(owner?.UserName ?? $"user #{vendor.Key}");
+                continue;
+            }
+
+            var vendorIds = vendor.Select(p => p.Id).ToList();
+
+            await _db.GetTable<Products>()
+                .Where(p => vendorIds.Contains(p.Id))
+                .Set(p => p.UserId, buyerId)
+                .Set(p => p.IsForSale, false)
+                .UpdateAsync();
+        }
 
         await transaction.CommitAsync();
 
-        // Apply bulk discount
         var total = ids.Count >= BulkDiscountThreshold
             ? subtotal * (1 - BulkDiscountRate)
             : subtotal;
 
-        return Math.Round(total, 2);
+        return new BuyResult(
+            Math.Round(total, 2),
+            shutDownVendors.Count > 0,
+            shutDownVendors);
     }
 }

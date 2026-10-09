@@ -10,10 +10,25 @@
  * ---------------------------------------------------------------
  */
 
+export interface Category {
+  /** @format int32 */
+  id?: number;
+  slug?: string;
+  name?: string;
+  isAvailable?: boolean;
+}
+
+export interface CategoryRequest {
+  name?: string;
+  slug?: string;
+  isAvailable?: boolean;
+}
+
 export interface User {
   /** @format int32 */
   userId?: number;
   userName?: string;
+  isAdmin?: boolean;
   userProducts?: Products[];
 }
 
@@ -25,6 +40,7 @@ export interface Products {
   productName?: string;
   /** @format decimal */
   price?: number;
+  category?: string;
   isForSale?: boolean;
   user?: User | null;
 }
@@ -40,12 +56,24 @@ export interface ProductRequest {
   price?: number;
 }
 
+export interface BuyResult {
+  /** @format decimal */
+  total?: number;
+  fbiTriggered?: boolean;
+  shutDownVendors?: string[];
+}
+
+export interface BuyRequest {
+  productIds?: number[];
+}
+
 export interface CreateProductRequest {
   /** @format int32 */
   userId?: number;
   productName?: string;
   /** @format decimal */
   price?: number;
+  category?: string | null;
 }
 
 export interface UpdateProductRequest {
@@ -54,6 +82,26 @@ export interface UpdateProductRequest {
   productName?: string;
   /** @format decimal */
   price?: number;
+}
+
+export interface AdminDeleteUserParams {
+  /** @format int32 */
+  id: number;
+}
+
+export interface AdminGetCategoryByIdParams {
+  /** @format int32 */
+  id: number;
+}
+
+export interface AdminUpdateCategoryParams {
+  /** @format int32 */
+  id: number;
+}
+
+export interface AdminDeleteCategoryParams {
+  /** @format int32 */
+  id: number;
 }
 
 export interface BaseUserGetProductParams {
@@ -83,8 +131,6 @@ export interface BaseUserSellParams {
 export interface BaseUserBuyParams {
   /** @format int32 */
   buyerId?: number;
-  /** @format int32 */
-  productId?: number;
 }
 
 export interface ProductGetByIdParams {
@@ -375,6 +421,111 @@ export class Api<
     /**
      * No description
      *
+     * @tags Admin
+     * @name AdminDeleteUser
+     * @request DELETE:/api/admin/users/{id}
+     */
+    adminDeleteUser: (
+      { id }: AdminDeleteUserParams,
+      params: RequestParams = {},
+    ) =>
+      this.request<Blob, any>({
+        path: `/api/admin/users/${id}`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Admin
+     * @name AdminGetAllCategories
+     * @request GET:/api/admin/categories
+     */
+    adminGetAllCategories: (params: RequestParams = {}) =>
+      this.request<Category[], any>({
+        path: `/api/admin/categories`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Admin
+     * @name AdminCreateCategory
+     * @request POST:/api/admin/categories
+     */
+    adminCreateCategory: (data: CategoryRequest, params: RequestParams = {}) =>
+      this.request<Category, any>({
+        path: `/api/admin/categories`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Admin
+     * @name AdminGetCategoryById
+     * @request GET:/api/admin/categories/{id}
+     */
+    adminGetCategoryById: (
+      { id }: AdminGetCategoryByIdParams,
+      params: RequestParams = {},
+    ) =>
+      this.request<Category, any>({
+        path: `/api/admin/categories/${id}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Admin
+     * @name AdminUpdateCategory
+     * @request PUT:/api/admin/categories/{id}
+     */
+    adminUpdateCategory: (
+      { id }: AdminUpdateCategoryParams,
+      data: CategoryRequest,
+      params: RequestParams = {},
+    ) =>
+      this.request<Category, any>({
+        path: `/api/admin/categories/${id}`,
+        method: "PUT",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Admin
+     * @name AdminDeleteCategory
+     * @request DELETE:/api/admin/categories/{id}
+     */
+    adminDeleteCategory: (
+      { id }: AdminDeleteCategoryParams,
+      params: RequestParams = {},
+    ) =>
+      this.request<Blob, any>({
+        path: `/api/admin/categories/${id}`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
      * @tags BaseUser
      * @name BaseUserRegister
      * @request POST:/api/users-actions/Register
@@ -493,11 +644,33 @@ export class Api<
      * @name BaseUserBuy
      * @request POST:/api/users-actions/Buy
      */
-    baseUserBuy: (query: BaseUserBuyParams = {}, params: RequestParams = {}) =>
-      this.request<Blob, any>({
+    baseUserBuy: (
+      query: BaseUserBuyParams = {},
+      data: BuyRequest,
+      params: RequestParams = {},
+    ) =>
+      this.request<BuyResult, any>({
         path: `/api/users-actions/Buy`,
         method: "POST",
         query: query,
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Category
+     * @name CategoryGetAll
+     * @request GET:/api/Category
+     */
+    categoryGetAll: (params: RequestParams = {}) =>
+      this.request<Category[], any>({
+        path: `/api/Category`,
+        method: "GET",
+        format: "json",
         ...params,
       }),
 

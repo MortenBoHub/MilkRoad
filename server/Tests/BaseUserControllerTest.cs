@@ -7,10 +7,8 @@ using Xunit;
 
 namespace Tests;
 
-public class BaseUserControllerTests
+public class buBaseUserControllerTests
 {
-    // ---------- Fakes ----------
-
     public class FakeUserService : UserService
     {
         public User? UserToReturn { get; set; }
@@ -22,14 +20,10 @@ public class BaseUserControllerTests
         public override Task<User?> RegisterAsync(string userName, string password)
             => Task.FromResult(UserToReturn);
 
-        /*  public override Task<User?> LoginAsync(string userName, string password)
-              => Task.FromResult(UserToReturn);
-      } */
-
         private class FakeProductService : ProductService
         {
-            public Products? ProductToReturn { get; set; } // for GetByIdAsync
-            public bool BoolResult { get; set; } // for Sell / Buy
+            public Products? ProductToReturn { get; set; }
+            public bool BoolResult { get; set; }
             public Products? CreatedProduct { get; private set; }
             public int? DeletedId { get; private set; }
 
@@ -55,15 +49,16 @@ public class BaseUserControllerTests
             public override Task<bool> SetForSaleAsync(int productId, int userId, bool forSale)
                 => Task.FromResult(BoolResult);
 
-            public override Task<bool> BuyAsync(int productId, int buyerId)
-                => Task.FromResult(BoolResult);
+            // The controller's Buy calls the multi-product overload.
+            public BuyResult? BuyResultToReturn { get; set; }
+
+            public override Task<BuyResult?> BuyAsync(List<int> productIds, int buyerId)
+                => Task.FromResult(BuyResultToReturn);
         }
 
         private static BaseUserController CreateController(
             FakeUserService? users = null, FakeProductService? products = null)
             => new(users ?? new FakeUserService(), products ?? new FakeProductService());
-
-        // ---------- Register ----------
 
         [Theory]
         [InlineData("Gandalf")]
@@ -91,32 +86,6 @@ public class BaseUserControllerTests
             Assert.IsType<ConflictObjectResult>(result.Result);
         }
 
-        // ---------- Login ----------
-
-     /*   [Fact]
-        public async Task Login_ValidCredentials_ReturnsOkWithUser()
-        {
-            var expectedUser = new User();
-            var controller = CreateController(new FakeUserService { UserToReturn = expectedUser });
-
-            var result = await controller.Login(new AuthRequest("Gandalf", "password123"));
-
-            var ok = Assert.IsType<OkObjectResult>(result.Result);
-            Assert.Same(expectedUser, ok.Value);
-        }
-
-        [Fact]
-        public async Task Login_InvalidCredentials_ReturnsUnauthorized()
-        {
-            var controller = CreateController(new FakeUserService { UserToReturn = null });
-
-            var result = await controller.Login(new AuthRequest("Gandalf", "wrong"));
-
-            Assert.IsType<UnauthorizedResult>(result.Result);
-        } */
-
-        // ---------- AddProduct ----------
-
         [Fact]
         public async Task AddProduct_ValidRequest_CreatesProductForUser()
         {
@@ -131,8 +100,6 @@ public class BaseUserControllerTests
             Assert.Equal(9.99m, products.CreatedProduct.Price);
             Assert.Same(products.CreatedProduct, result);
         }
-
-        // ---------- DeleteProduct ----------
 
         [Fact]
         public async Task DeleteProduct_ProductDoesNotExist_ReturnsNotFound()
@@ -176,8 +143,6 @@ public class BaseUserControllerTests
             Assert.Equal(1, products.DeletedId);
         }
 
-        // ---------- Sell ----------
-
         [Theory]
         [InlineData(true, typeof(NoContentResult))]
         [InlineData(false, typeof(NotFoundResult))]
@@ -190,18 +155,21 @@ public class BaseUserControllerTests
             Assert.IsType(expectedType, result);
         }
 
-        // ---------- Buy ----------
-
         [Theory]
-        [InlineData(true, typeof(NoContentResult))]
-        [InlineData(false, typeof(NotFoundResult))]
-        public async Task Buy_ReturnsExpectedResult(bool serviceResult, Type expectedType)
+        [InlineData(true, typeof(OkObjectResult))]
+        [InlineData(false, typeof(NotFoundObjectResult))]
+        public async Task Buy_ReturnsExpectedResult(bool success, Type expectedType)
         {
-            var controller = CreateController(products: new FakeProductService { BoolResult = serviceResult });
+            var buyResult = success
+                ? new BuyResult(10m, false, new List<string>())
+                : null;
+            var controller = CreateController(
+                products: new FakeProductService { BuyResultToReturn = buyResult });
 
-            var result = await controller.Buy(5, 1);
+            var action = await controller.Buy(5, new BuyRequest(new List<int> { 1 }));
 
-            Assert.IsType(expectedType, result);
+            // ActionResult<T> wraps the underlying IActionResult in .Result.
+            Assert.IsType(expectedType, action.Result);
         }
     }
 }
